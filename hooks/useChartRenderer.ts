@@ -1,34 +1,57 @@
-import { useEffect, useRef } from 'react';
-import { devicePixelRatioScale } from '../lib/canvasUtils';
+
+// This hook encapsulates the core canvas drawing logic.
+import { RefObject, useEffect, useRef } from 'react';
+import { DataPoint, DataBounds } from '@/lib/types';
+import { drawLineChart } from '@/lib/canvasUtils';
 
 export function useChartRenderer(
-  canvasRef: React.RefObject<HTMLCanvasElement>,
-  renderFn: (ctx: CanvasRenderingContext2D) => void,
-  deps: any[] = []
+  canvasRef: RefObject<HTMLCanvasElement>,
+  data: DataPoint[],
+  bounds: DataBounds,
+  size: { width: number; height: number }
 ) {
-  const frameRef = useRef<number | null>(null);
+  // We used refs to pass data to the rAF loop without
+  // re-triggering the useEffect hook, which would
+  // constantly tear down and set up the animation loop.
+  const dataRef = useRef(data);
+  const boundsRef = useRef(bounds);
+
+  // Keep refs updated with the latest data
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    let mounted = true;
-    const ctx = devicePixelRatioScale(canvas);
+    boundsRef.current = bounds;
+  }, [bounds]);
 
-    function loop() {
-      if (!mounted) return;
-      try {
-        renderFn(ctx);
-      } catch (e) {
-        // swallow render errors
-      }
-      frameRef.current = requestAnimationFrame(loop);
+  useEffect(() => {
+    if (!canvasRef.current || size.width === 0 || size.height === 0) {
+      return;
     }
 
-    frameRef.current = requestAnimationFrame(loop);
-    return () => {
-      mounted = false;
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+
+    const render = () => {
+      // Access the latest data from refs inside the loop
+      drawLineChart(
+        ctx,
+        dataRef.current,
+        boundsRef.current,
+        size.width,
+        size.height
+      );
+      animationFrameId = requestAnimationFrame(render);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+
+    render(); // Start the rendering loop
+
+    return () => {
+      cancelAnimationFrame(animationFrameId); // Cleanup
+    };
+  }, [canvasRef, size]); // Re-run only if canvas or size changes
 }

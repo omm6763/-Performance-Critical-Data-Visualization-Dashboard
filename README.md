@@ -1,84 +1,74 @@
-# My Next.js App
+# Performance Dashboard (Next.js 14 + Canvas)
 
-This is a Next.js application that serves as a template for building modern web applications. 
+This is a solution for the "Performance-Critical Data Visualization Dashboard" assignment. It demonstrates how to build a real-time dashboard capable of rendering 10,000+ data points at 60fps using Next.js 14 (App Router), TypeScript, and a custom Canvas renderer (no charting libraries).
 
-## Features
+This project focuses on **high-performance rendering** for the Line Chart and **correct Next.js architecture**. Other features are included as UI placeholders (stubs) to fulfill the assignment structure.
 
-- Server-side rendering and static site generation
-- API routes for backend functionality
-- Custom hooks for reusable logic
-- Modular components for better organization
+##  Feature Overview
 
-## Getting Started
+This project successfully implements the core performance-critical features.
 
-To get started with this project, follow these steps:
+### Fully Functional Features
+* **Real-time Line Chart:** The primary `LineChart` component is fully functional, rendering **10,000+ data points at 60fps**.
+* **Live Data Stream:** Simulates new data arriving every 100ms.
+* **Custom Canvas Renderer:** The chart is built from scratch using the Canvas API, `requestAnimationFrame`, and advanced React hooks (`useRef`, `useLayoutEffect`) for maximum performance.
+* **Performance Monitor:** A live UI component tracks and displays real-time **FPS** and **JavaScript heap memory (MEM)** usage.
+* **Virtualized Data Table:** The data table on the right uses virtualization (`useVirtualization` hook) to render only the visible rows, allowing it to handle the 10,000-point dataset without performance loss.
+* **Next.js 14 App Router:** Correctly uses Server Components for the initial page layout and Client Components for all interactive parts.
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd my-nextjs-app
-   ```
+### Placeholder (Stub) Features
+* **Chart Switching:** The buttons to switch charts (`Bar`, `Scatter`, `Heatmap`) are functional and update the UI to show the placeholder components.
+* **Stubbed Charts:** The `BarChart`, `ScatterPlot`, and `Heatmap` components are placeholders that render a label but do not contain data rendering logic.
+* **Controls:** The `FilterPanel` and `TimeRangeSelector` are UI placeholders. They are present in the layout but are not wired up to filter or modify the data.
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+##  Screenshot
 
-3. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
+Here is the final application running in production mode, achieving 60fps:
 
-4. **Open your browser:**
-   Navigate to `http://localhost:3000` to see your application in action.
+![A screenshot of the performance dashboard showing a line chart, a data table, and a performance monitor in the corner reading 60fps](image.png)
 
-## Project Structure
+##  Setup & Running
 
-- `app/`: Contains the main application files including layout and pages.
-- `components/`: Contains reusable components like Header and Footer.
-- `lib/`: Contains utility functions for API calls.
-- `hooks/`: Contains custom hooks for shared logic.
-- `public/`: Contains static files like images and robots.txt.
-- `.vscode/`: Contains settings for the development environment.
-- `.eslintrc.json`: ESLint configuration for code linting.
-- `next.config.js`: Configuration file for Next.js.
-- `package.json`: Lists project dependencies and scripts.
-- `tsconfig.json`: TypeScript configuration file.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/omm6763/-Performance-Critical-Data-Visualization-Dashboard.git
+    cd performance-dashboard
+    ```
 
-## Performance Dashboard (Next.js + TypeScript) — Phase‑Extended
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-This repository is a Phase‑1 → Phase‑2 scaffold implementing a performant real‑time visualization. Add the new files from this paste into the project.
+3.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
-Quick start (Windows PowerShell)
-1. cd "c:\Users\beher\Desktop\dashboard\my-nextjs-app"
-2. npm install
-3. npm run dev
-4. Open http://localhost:3000/dashboard
+4.  **Run the production build (for accurate performance testing):**
+    ```bash
+    npm run build
+    npm run start
+    ```
+    Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) to see the app.
 
-What was added in this step
-- Charts: BarChart, ScatterPlot, Heatmap (canvas implementations)
-- Controls: FilterPanel, TimeRangeSelector, PerformanceStressControls
-- Hooks: useChartRenderer, usePerformanceMonitor
-- Lib: performanceUtils, canvasUtils
-- Worker: public/workers/dataWorker.js (decimation/aggregation)
-- README & PERFORMANCE.md updates
+##  Performance Testing Instructions
 
-How to use Worker (example)
-- new Worker('/workers/dataWorker.js') and post messages with { type: 'DECIMATE', payload: { values, max } } etc.
+1.  Run the **production build** (`npm run build && npm run start`). Development mode is not suitable for accurate performance profiling.
+2.  Open the dashboard (`http://localhost:3000/dashboard`) in your browser.
+3.  Observe the **FPS counter** in the top-right corner. It should remain stable at or near your monitor's refresh rate (e.g., 60fps).
+4.  Observe the **MEM (Memory)** counter. It should remain stable and not continuously increase over time (indicating no memory leaks).
+5.  Use your browser's (e.g., Chrome) built-in **Performance Monitor** to confirm steady frame rates and low, stable JS heap size.
 
-Next recommended steps
-- Wire the new controls into DashboardClient (hook up onChange)
-- Replace any heavy client aggregation with worker calls and use OffscreenCanvas where available
-- Add automated benchmarking (Puppeteer) and CI
+##  Next.js Specific Optimizations
 
-Notes
-- Keep imports relative; this scaffold uses simple sampling decimation and sliding window to avoid memory growth.
-- For production, build and profile with the Chrome Performance panel; OffscreenCanvas + worker combination yields the best main-thread relief.
+* **Server/Client Component Split:** `app/dashboard/page.tsx` is a Server Component, serving the static shell. `DashboardClient.tsx` and all components under it are Client Components (`'use client'`) to handle interactivity and state.
+* **Provider Pattern:** `DataProvider.tsx` is a Client Component that uses React Context to manage the global data state, making it available to all charts and tables efficiently.
+* **`useMemo`:** The `DataProvider` uses `useMemo` to prevent expensive re-calculations of data bounds and to stabilize the context value, preventing unnecessary re-renders.
+* **Suspense:** `Suspense` is used in `page.tsx` to stream the client-side components, improving the initial page load experience.
 
-## Contributing
+##  Browser Compatibility Notes
 
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
-
-## License
-
-This project is licensed under the MIT License.
+* **Target:** This application is built for modern evergreen browsers (Chrome, Firefox, Safari, Edge).
+* **Canvas API:** Relies on the standard 2D Canvas API.
+* **Performance.memory API:** The memory monitor relies on the `performance.memory` API, which is primarily available in Chromium-based browsers. The app will run in other browsers, but the memory reading may show `0 MB`.

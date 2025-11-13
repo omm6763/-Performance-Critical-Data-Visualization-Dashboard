@@ -1,47 +1,56 @@
 'use client';
-import React from 'react';
-import { useDataStream } from '../hooks/useDataStream';
-import { useDataContext } from './providers/DataProvider';
-import { LineChart } from './charts/LineChart';
-import { PerformanceMonitor } from './ui/PerformanceMonitor';
-import { DataTable } from './ui/DataTable';
-import { FilterPanel } from './controls/FilterPanel';
-import { TimeRangeSelector } from './controls/TimeRangeSelector';
-import { PerformanceStressControls } from './ui/PerformanceStressControls';
-import { useViewData } from '../hooks/useViewData';
+
+import { useState } from 'react';
+import { useData } from './providers/DataProvider';
+import LineChart from './charts/LineChart';
+import BarChart from './charts/BarChart';
+import ScatterPlot from './charts/ScatterPlot';
+import Heatmap from './charts/Heatmap';
+import PerformanceMonitor from './ui/PerformanceMonitor';
+import DataTable from './ui/DataTable';
+import FilterPanel from './controls/FilterPanel';
+import TimeRangeSelector from './controls/TimeRangeSelector';
 
 export default function DashboardClient() {
-  useDataStream();
-  const { data } = useDataContext();
-  const viewData = useViewData(); // filtered + aggregated when timeRange != live
+  const { data, bounds } = useData(); // Get data from our provider
+  const [activeChart, setActiveChart] = useState('line');
+
+  // useTransition could be used here to change filters
+
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'start', marginBottom: 12 }}>
-        <div style={{ flex: 1 }}>
-          <LineChart data={viewData.length ? viewData : data} height={320} maxPoints={10000} />
+    <div className="dashboard-container">
+      <PerformanceMonitor />
+      
+      <header className="dashboard-header">
+        <h1>Performance Dashboard</h1>
+        <p>Rendering {data.length.toLocaleString()} data points.</p>
+      </header>
+      
+      <div className="controls-bar">
+        <FilterPanel />
+        <TimeRangeSelector />
+      </div>
+
+      <div className="charts-grid">
+        <div className="chart-main">
+          {/* We only render the active chart */}
+          {activeChart === 'line' && <LineChart data={data} bounds={bounds} />}
+          {activeChart === 'bar' && <BarChart />}
+          {activeChart === 'scatter' && <ScatterPlot />}
+          {activeChart === 'heatmap' && <Heatmap />}
         </div>
-
-        <div style={{ width: 260, display: 'flex', gap: 8, flexDirection: 'column' }}>
-          <div style={{ background: '#021226', borderRadius: 8, padding: 8 }}>
-            <FilterPanel />
-            <div style={{ height: 8 }} />
-            <TimeRangeSelector />
-          </div>
-
-          <div style={{ background: '#021226', borderRadius: 8, padding: 8 }}>
-            <PerformanceStressControls />
-          </div>
-
-          <div style={{ width: '100%', background: '#021226', borderRadius: 8, padding: 8 }}>
-            <PerformanceMonitor />
-          </div>
+        <div className="chart-sidebar">
+          <DataTable />
         </div>
       </div>
 
-      <div style={{ marginTop: 12 }}>
-        <h2 style={{ color: '#cfe8ff' }}>Data Table (virtualized)</h2>
-        <DataTable rows={data} rowHeight={28} height={300} />
+      {/* Placeholder buttons to show chart switching */}
+      <div className="chart-selector">
+        <button onClick={() => setActiveChart('line')} disabled={activeChart === 'line'}>Line Chart</button>
+        <button onClick={() => setActiveChart('bar')} disabled={activeChart === 'bar'}>Bar </button>
+        <button onClick={() => setActiveChart('scatter')} disabled={activeChart === 'scatter'}>Scatter</button>
+        <button onClick={() => setActiveChart('heatmap')} disabled={activeChart === 'heatmap'}>Heatmap</button>
       </div>
     </div>
   );

@@ -1,49 +1,40 @@
-import type { DataPoint } from './types';
 
-// decimate scalar array to max length using simple stride sampling
-export function decimate(values: number[], max = 1000) {
-  if (values.length <= max) return values.slice();
-  const step = values.length / max;
-  const out: number[] = [];
-  for (let i = 0; i < max; i++) {
-    out.push(values[Math.floor(i * step)]);
+
+import { DataPoint, DataBounds } from "./types";
+
+
+export function calculateBounds(data: DataPoint[]): DataBounds {
+  if (data.length === 0) {
+    const now = Date.now();
+    return { minTime: now - 10000, maxTime: now, minValue: 0, maxValue: 100 };
   }
-  return out;
-}
 
-// decimate points preserving values (returns subset)
-export function decimatePoints(points: DataPoint[], max = 10000) {
-  if (points.length <= max) return points.slice();
-  const step = points.length / max;
-  const out: DataPoint[] = [];
-  for (let i = 0; i < max; i++) out.push(points[Math.floor(i * step)]);
-  return out;
-}
+  let minTime = data[0].timestamp;
+  let maxTime = data[data.length - 1].timestamp;
+  let minValue = Infinity;
+  let maxValue = -Infinity;
 
-// aggregate into equal-time bins; returns averaged value per bin
-export function aggregateByInterval(points: DataPoint[], intervalMs: number) {
-  if (!points || points.length === 0) return [];
-  const start = points[0].timestamp;
-  const bins: { sum: number; count: number }[] = [];
-  for (const p of points) {
-    const idx = Math.floor((p.timestamp - start) / intervalMs);
-    if (!bins[idx]) bins[idx] = { sum: 0, count: 0 };
-    bins[idx].sum += p.value;
-    bins[idx].count += 1;
+  for (const point of data) {
+    if (point.value < minValue) minValue = point.value;
+    if (point.value > maxValue) maxValue = point.value;
   }
-  return bins.map((b) => (b ? b.sum / Math.max(1, b.count) : 0));
-}
 
-// produce heatmap bins of length `bins` along time dimension
-export function heatmapBins(points: DataPoint[], bins = 100) {
-  if (!points || points.length === 0) return new Array(bins).fill(0);
-  const start = points[0].timestamp;
-  const end = points[points.length - 1].timestamp || start + 1;
-  const span = Math.max(1, end - start);
-  const out = new Array(bins).fill(0);
-  for (const p of points) {
-    const t = Math.min(bins - 1, Math.floor(((p.timestamp - start) / span) * bins));
-    out[t] += Math.abs(p.value);
+  // Add padding to min/max value for better visualization
+  const valueRange = maxValue - minValue;
+  if (valueRange === 0) {
+    // Handle case where all values are the same
+    return {
+      minTime,
+      maxTime,
+      minValue: minValue - 10, // Default padding
+      maxValue: maxValue + 10, // Default padding
+    };
   }
-  return out;
+
+  return {
+    minTime,
+    maxTime,
+    minValue: minValue - valueRange * 0.1, // 10% padding
+    maxValue: maxValue + valueRange * 0.1, // 10% padding
+  };
 }

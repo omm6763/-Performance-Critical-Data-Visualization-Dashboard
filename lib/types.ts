@@ -1,12 +1,25 @@
+
+
 export type DataPoint = {
-  id: string;
-  timestamp: number; // ms
+  timestamp: number; // Unix timestamp (ms)
   value: number;
-  category?: string;
 };
 
-export type ChartConfig = {
-  type: 'line' | 'bar' | 'scatter' | 'heatmap';
-  color?: string;
-  visible?: boolean;
+export type DataBounds = {
+  minTime: number;
+  maxTime: number;
+  minValue: number;
+  maxValue: number;
+};
+
+export type PerformanceMetrics = {
+  fps: number;
+  memory: number; // in MB
+};
+
+export type ChartRendererProps = {
+  data: DataPoint[];
+  bounds: DataBounds;
+  width: number;
+  height: number;
 };

@@ -1,16 +1,19 @@
-import React from 'react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import '../app/globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
 
-const Layout = ({ children }) => {
-    return (
-        <div>
-            <Header />
-            <main>{children}</main>
-            <Footer />
-        </div>
-    );
+export const metadata: Metadata = {
+  title: "Performance Dashboard",
+  description: "High-performance Next.js dashboard",
 };
 
-export default Layout;
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}

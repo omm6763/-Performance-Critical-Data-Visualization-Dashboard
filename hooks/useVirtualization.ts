@@ -1,22 +1,46 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState, RefObject } from 'react';
 
-export function useVirtualization({ containerRef, itemCount, itemHeight, viewportHeight }: any) {
+const ITEM_HEIGHT = 30; // Fixed height for each row
+const OVERSCAN = 5; // Render a few extra items above/below viewport
+
+export function useVirtualization(
+  containerRef: RefObject<HTMLDivElement>,
+  itemCount: number
+) {
   const [scrollTop, setScrollTop] = useState(0);
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    function onScroll() {
-      setScrollTop(el.scrollTop);
+  const handleScroll = () => {
+    if (containerRef.current) {
+      setScrollTop(containerRef.current.scrollTop);
     }
-    el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
-  }, [containerRef]);
+  };
 
-  const visibleCount = Math.ceil(viewportHeight / itemHeight) + 3;
-  const start = Math.max(0, Math.floor(scrollTop / itemHeight) - 1);
-  const end = Math.min(itemCount, start + visibleCount);
-  const offsetTop = start * itemHeight;
+  const containerHeight = containerRef.current?.clientHeight || 0;
 
-  return { start, end, offsetTop, visibleCount };
+  // Calculate visible items
+  const startIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - OVERSCAN);
+  const endIndex = Math.min(
+    itemCount - 1,
+    Math.ceil((scrollTop + containerHeight) / ITEM_HEIGHT) + OVERSCAN
+  );
+
+  const virtualItems = [];
+  for (let i = startIndex; i <= endIndex; i++) {
+    virtualItems.push({
+      index: i,
+      style: {
+        position: 'absolute' as const,
+        top: `${i * ITEM_HEIGHT}px`,
+        left: 0,
+        right: 0,
+        height: `${ITEM_HEIGHT}px`,
+      },
+    });
+  }
+
+  return {
+    handleScroll,
+    virtualItems,
+    totalHeight: itemCount * ITEM_HEIGHT,
+  };
 }

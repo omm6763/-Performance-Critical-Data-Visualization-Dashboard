@@ -1,48 +1,41 @@
-import { useEffect, useState } from 'react';
+
+// Calculates FPS and monitors memory.
+
+import { useState, useEffect, useRef } from 'react';
+import { PerformanceMetrics } from '@/lib/types';
 
 export function usePerformanceMonitor() {
-  const [metrics, setMetrics] = useState({
-    fps: 0,
-    longTasks: 0,
-    memoryMB: null as number | null,
-  });
+  const [metrics, setMetrics] = useState<PerformanceMetrics>({ fps: 0, memory: 0 });
+  const lastTimeRef = useRef(performance.now());
+  const frameCountRef = useRef(0);
 
   useEffect(() => {
-    let rafId = 0;
-    let frames = 0;
-    let last = performance.now();
+    let animationFrameId: number;
 
-    function rafTick() {
-      frames++;
+    const measure = () => {
       const now = performance.now();
-      if (now - last >= 1000) {
-        setMetrics((m) => ({ ...m, fps: frames }));
-        frames = 0;
-        last = now;
-        // @ts-ignore
-        if ((performance as any).memory) {
-          // @ts-ignore
-          setMetrics((m) => ({ ...m, memoryMB: Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024) }));
-        }
+      frameCountRef.current++;
+
+      // Update metrics every second
+      if (now - lastTimeRef.current >= 1000) {
+        const fps = frameCountRef.current;
+        const memory = (performance as any).memory ? (performance as any).memory.usedJSHeapSize / 1048576 : 0; // MB
+
+        setMetrics({
+          fps: fps,
+          memory: parseFloat(memory.toFixed(2)),
+        });
+
+        lastTimeRef.current = now;
+        frameCountRef.current = 0;
       }
-      rafId = requestAnimationFrame(rafTick);
-    }
-    rafId = requestAnimationFrame(rafTick);
 
-    let observer: PerformanceObserver | null = null;
-    try {
-      observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        const long = entries.filter((e) => e.entryType === 'longtask').length;
-        if (long) setMetrics((m) => ({ ...m, longTasks: m.longTasks + long }));
-      });
-      observer.observe({ entryTypes: ['longtask'] });
-    } catch {}
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      if (observer) observer.disconnect();
+      animationFrameId = requestAnimationFrame(measure);
     };
+
+    measure();
+
+    return () => cancelAnimationFrame(animationFrameId);
   }, []);
 
   return metrics;

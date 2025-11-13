@@ -1,54 +1,56 @@
 'use client';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import type { DataPoint } from '../../lib/types';
 
-type StressConfig = { rateMs: number; batchSize: number };
+import { createContext, useContext, useMemo, ReactNode } from 'react';
+import { DataPoint, DataBounds } from '@/lib/types';
+import { useDataStream } from '@/hooks/useDataStream';
+import { calculateBounds } from '@/lib/performanceUtils';
+import { generateInitialDataset } from '@/lib/dataGenerator';
 
-type ContextValue = {
+// 1. Define the context shape
+type DataContextType = {
   data: DataPoint[];
-  pushBatch: (b: DataPoint[]) => void;
-  clear: () => void;
-  // filters / time range
-  filters: { categories: string[] };
-  setFilters: (f: { categories: string[] }) => void;
-  timeRange: 'live' | '1m' | '5m' | '1h';
-  setTimeRange: (t: ContextValue['timeRange']) => void;
-  // stress controls
-  stress: StressConfig;
-  setStress: (s: StressConfig) => void;
+  bounds: DataBounds;
 };
 
-const DataContext = createContext<ContextValue | null>(null);
+// 2. Create the context
+const DataContext = createContext<DataContextType | undefined>(undefined);
 
-export function DataProvider({ children, initialData = [] as DataPoint[] }: any) {
-  const [data, setData] = useState<DataPoint[]>(initialData);
-  const [filters, setFilters] = useState<{ categories: string[] }>({ categories: [] });
-  const [timeRange, setTimeRange] = useState<ContextValue['timeRange']>('live');
-  const [stress, setStress] = useState<StressConfig>({ rateMs: 100, batchSize: 100 });
+// 3. Create the provider component
+type DataProviderProps = {
+  children: ReactNode;
+};
 
-  const pushBatch = useCallback((batch: DataPoint[]) => {
-    setData((prev) => {
-      const merged = prev.concat(batch);
-      // keep sliding window to avoid memory growth
-      if (merged.length > 200000) {
-        return merged.slice(merged.length - 200000);
-      }
-      return merged;
-    });
-  }, []);
+// We generate initial data here to avoid layout shifts
+const initialData = generateInitialDataset(10000); // Start with 10k points
+const initialBounds = calculateBounds(initialData);
 
-  const clear = useCallback(() => setData([]), []);
+export function DataProvider({ children }: DataProviderProps) {
+  // The useDataStream hook manages the real-time updates
+  const data = useDataStream(initialData);
 
-  const value = useMemo(
-    () => ({ data, pushBatch, clear, filters, setFilters, timeRange, setTimeRange, stress, setStress }),
-    [data, pushBatch, clear, filters, timeRange, stress]
+  // useMemo prevents recalculating bounds on every render
+
+  const bounds = useMemo(() => calculateBounds(data), [data]);
+
+  // useMemo prevents consumers from re-rendering if
+  // the context value object didn't *actually* change
+  const value = useMemo(() => ({
+    data,
+    bounds,
+  }), [data, bounds]);
+
+  return (
+    <DataContext.Provider value={value}>
+      {children}
+    </DataContext.Provider>
   );
-
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
-export function useDataContext() {
-  const ctx = useContext(DataContext);
-  if (!ctx) throw new Error('useDataContext must be used inside DataProvider');
-  return ctx;
+// 4. Create the consumer hook
+export function useData() {
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error('useData must be used within a DataProvider');
+  }
+  return context;
 }
