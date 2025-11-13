@@ -1,8 +1,12 @@
 # Performance Dashboard (Next.js 14 + Canvas)
 
-This is a solution for the "Performance-Critical Data Visualization Dashboard" assignment. It demonstrates how to build a real-time dashboard capable of rendering 10,000+ data points at 60fps using Next.js 14 (App Router), TypeScript, and a custom Canvas renderer (no charting libraries).
+##  Live Demo
 
-This project focuses on **high-performance rendering** for the Line Chart and **correct Next.js architecture**. Other features are included as UI placeholders (stubs) to fulfill the assignment structure.
+**View the live project deployed on Vercel:**
+
+[**https://performance-critical-data-visualiza-lyart.vercel.app/dashboard**](https://performance-critical-data-visualiza-lyart.vercel.app/dashboard)
+
+---
 
 ##  Feature Overview
 
